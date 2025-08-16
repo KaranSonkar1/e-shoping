@@ -6,9 +6,13 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://localhost:5000", // your backend URL
+        target: "http://localhost:5000", // local backend for development
         changeOrigin: true,
       },
     },
   },
+  preview: {
+    host: true, // allow all hosts
+    allowedHosts: ['e-shopings.onrender.com'] // your Render frontend domain
+  }
 });
