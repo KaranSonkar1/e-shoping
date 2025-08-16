@@ -8,21 +8,19 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
-import paymentRoutes from "./routes/paymentRoutes.js"; // if using Razorpay
+import paymentRoutes from "./routes/paymentRoutes.js"; // Razorpay routes
 
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: "*" // Allow all origins; you can restrict to your frontend URL later
-}));
+app.use(cors({ origin: "*" })); // allow all origins; can restrict later
 app.use(express.json());
 
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
-app.use("/api/payment", paymentRoutes); // Razorpay endpoints
+app.use("/api/payment", paymentRoutes);
 
 app.get("/", (req, res) => res.send("API Running"));
 
@@ -32,7 +30,7 @@ mongoose
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.error("MongoDB connection error:", err));
 
-// Optional: Check credentials
+// Optional: check credentials
 if (!process.env.EMAIL || !process.env.EMAIL_PASS) {
   console.warn("⚠️ Email credentials missing in .env. Email sending will not work.");
 }
