@@ -4,44 +4,62 @@ dotenv.config();
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 
+// Routes
 import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
-import paymentRoutes from "./routes/paymentRoutes.js"; // Razorpay routes
 
 const app = express();
 
-// Middleware
-app.use(cors({ origin: "*" })); // allow all origins; you can restrict later
+// ===== Middleware =====
 app.use(express.json());
 
-// API Routes (relative paths only!)
+// CORS (allow frontend on localhost & deployed frontend)
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173", // local frontend
+      "https://your-frontend.onrender.com", // replace with your deployed frontend
+    ],
+    credentials: true,
+  })
+);
+
+// ===== MongoDB Connection =====
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
+
+// ===== API Routes =====
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
-app.use("/api/payment", paymentRoutes);
 
-// Root route
-app.get("/", (req, res) => res.send("API Running"));
+// ===== Health Check =====
+app.get("/", (req, res) => {
+  res.send("API is running...");
+});
 
-// MongoDB connection
-mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.error("MongoDB connection error:", err));
+// ===== Serve Frontend in Production =====
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Optional: check credentials
-if (!process.env.EMAIL || !process.env.EMAIL_PASS) {
-  console.warn("⚠️ Email credentials missing in .env. Email sending will not work.");
-}
-if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
-  console.warn("⚠️ Twilio credentials missing in .env. SMS sending will not work.");
-}
-if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-  console.warn("⚠️ Razorpay credentials missing in .env. Payments will not work.");
+if (process.env.NODE_ENV === "production") {
+  const frontendPath = path.join(__dirname, "frontend", "dist");
+  app.use(express.static(frontendPath));
+
+  app.get("*", (req, res) =>
+    res.sendFile(path.resolve(frontendPath, "index.html"))
+  );
 }
 
-// Start server
+// ===== Start Server =====
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
