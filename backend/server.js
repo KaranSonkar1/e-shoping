@@ -4,8 +4,6 @@ dotenv.config();
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
 
 // Routes
 import authRoutes from "./routes/authRoutes.js";
@@ -14,52 +12,48 @@ import cartRoutes from "./routes/cartRoutes.js";
 
 const app = express();
 
-// ===== Middleware =====
+// Middleware
 app.use(express.json());
 
-// CORS (allow frontend on localhost & deployed frontend)
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173", // local frontend
-      "https://your-frontend.onrender.com", // replace with your deployed frontend
-    ],
-    credentials: true,
-  })
-);
+// CORS
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://your-frontend.onrender.com"
+  ],
+  credentials: true
+}));
 
-// ===== MongoDB Connection =====
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+// MongoDB
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log("✅ MongoDB connected"))
+.catch(err => {
+  console.error("❌ MongoDB error:", err);
+  process.exit(1);
+});
 
-// ===== API Routes =====
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 
-// ===== Health Check =====
-app.get("/", (req, res) => {
-  res.send("API is running...");
+// Health check
+app.get("/", (req, res) => res.send("✅ API running..."));
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
 });
 
-// ===== Serve Frontend in Production =====
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Error handler
+app.use((err, req, res, next) => {
+  console.error("❌ Server error:", err.stack);
+  res.status(500).json({ message: "Internal Server Error" });
+});
 
-if (process.env.NODE_ENV === "production") {
-  const frontendPath = path.join(__dirname, "frontend", "dist");
-  app.use(express.static(frontendPath));
-
-  app.get("*", (req, res) =>
-    res.sendFile(path.resolve(frontendPath, "index.html"))
-  );
-}
-
-// ===== Start Server =====
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
